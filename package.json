@@ -18,5 +18,11 @@
   "license": "CC0-1.0",
   "devDependencies": {
     "electron": "^10.1.5"
+  },
+  "dependencies": {
+    "alpinejs": "^2.7.3",
+    "lodash": "^4.17.20",
+    "tailwindcss": "^1.9.6",
+    "tailwindcss-touch": "^1.0.1"
   }
 }

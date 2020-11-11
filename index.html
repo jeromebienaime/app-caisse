@@ -1,19 +1,286 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8">
-    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
-    <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'">
-    <title>Hello World!</title>
-  </head>
-  <body>
-    <h1>Hello World!</h1>
-    We are using Node.js <span id="node-version"></span>,
-    Chromium <span id="chrome-version"></span>,
-    and Electron <span id="electron-version"></span>.
 
-    <!-- You can also require other files to run in this process -->
-    <script src="./renderer.js"></script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src *; style-src 'self' http://* 'unsafe-inline'; script-src 'self' http://* 'unsafe-inline' 'unsafe-eval'" />
+  <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'">
+  <link rel="stylesheet" href="./src/style.css">
+  <link rel="stylesheet" href="./dist/main.css">
+  <title>Hello World!</title>
+</head>
+
+<body>
+  <div x-data="app()" x-init="init()">
+    <div class="result bg-gray-200 text-gray-700 w-100 py-2 px-4">
+      <span class="text-6xl" x-text="lastTotal"></span>
+    </div>
+    <template x-if="error">
+      <div class="text-red-500 px-4 py-2 bg-red-200 text-center">
+        <span class="text-xl" x-text="error"></span>
+      </div>
+    </template>
+    <div class="container">
+      <div class="mt-4 xl:mx-64 sm:mx-8 mx-4 md:mx-12 lg:mx-32" x-show="productPad == true">
+        <div class="grid grid-cols-3 gap-8 md:gap-12">
+          <template x-for="(produit, index) in productList">
+            <div>
+              <div x-show="isAdmin">
+                <div @click="editProduct(index)" class="border mt-4 bg-gray-700 text-light-100 rounded-lg px-3 py-4
+                cursor-pointer flex justify-center items-center  transition duration-500 ease-in-out  pointer-fine:-translate-y-1 pointer-fine:bg-gray-800 pointer-fine:scale-110 hover:-translate-y-1
+            hover:bg-gray-800 hover:scale-110">
+                  <span class="icon-pencil text-gray-100 text-xl"></span>
+                </div>
+              </div>
+              <div @click="togglePad();selectProduct(index);" class="bg-gray-300 p-2 text-center rounded-lg cursor-pointer  transition duration-500 ease-in-out transform
+            pointer-fine:-translate-y-1 pointer-fine:bg-gray-400 pointer-fine:scale-110 hover:-translate-y-1
+            hover:bg-gray-400 hover:scale-110">
+                <div x-text="produit.label"></div>
+                <div class="text-center uppercase text-gray-700 text-lg font-bold"><span x-text="produit.price"></span>€
+                </div>
+                <img :src="produit.image" class="w-full h-auto">
+
+              </div>
+            </div>
+          </template>
+          <template x-if="isAdmin">
+            <div class="bg-green-300 p-2 text-center rounded-lg cursor-pointer  transition duration-500 ease-in-out transform
+            pointer-fine:-translate-y-1 pointer-fine:bg-green-400 pointer-fine:scale-110 hover:-translate-y-1
+            hover:bg-green-400 hover:scale-110 flex items-center justify-center" @click="toggleAddProductIcon"
+              x-show="createProductIcon">
+              <div class="text-center uppercase text-green-700 text-6xl font-bold icon-plus"></div>
+            </div>
+            <div x-show="isCreatingProduct">
+              <form class="border rounded-lg shadow py-4 px-1 bg-gray-900 text-gray-100">
+                <h2 class="text-lg">Nouveau produit</h2>
+                <div class="group mt-4">
+                  <label for="label" class="text-sm text-gray-100">intitulé</label>
+                  <input type="text" name="label" x-model="product.label"
+                    class="border-gray-500 px-2 py-1 text-sm rounded bg-gray-700 text-gray-200">
+                </div>
+                <div class="group mt-2">
+                  <label for="price" class="text-sm text-gray-100">prix</label>
+                  <div class="grid grid-cols-8 gap-2 w-full">
+                    <div class="col-span-3">
+                      <input type="text" name="price" x-model="product.price.unit"
+                        class="border-gray-500 px-2 py-1 text-sm  rounded bg-gray-700 text-gray-200 w-full block">
+                    </div>
+                    <div class="col-span-1 text-center">,</div>
+                    <div class="col-span-4">
+                      <input type="text" name="price" x-model="product.price.cents"
+                        class="border-gray-500 px-2 py-1 text-sm  rounded bg-gray-700 text-gray-200 w-full block">
+                    </div>
+                  </div>
+                </div>
+                <div class="group mt-2">
+                  <label for="image" class="text-sm text-gray-100">image</label>
+                  <div x-show="isElectron">
+                    <div class="border-gray-500 px-2 py-1 text-sm rounded bg-gray-700 text-gray-200 w-full block
+                    cursor-pointer" @click="chooseProductImage()" x-model="product.image">
+                      Choisir un fichier&hellip;
+                    </div>
+                  </div>
+                </div>
+                <div class="group mt-4 mx-auto grid grid-cols-2 gap-2">
+                  <button class="bg-green-400 rounded shadow border-green-200 text-green-800 px-4 py-1 block mx-auto"
+                    @click="createNewProduct()">créer</button>
+                  <div
+                    class="bg-red-400 rounded shadow border-red-200 text-red-800 px-4 py-1 block mx-auto cursor-pointer"
+                    @click="toggleAddProductIcon()">annuler</div>
+                </div>
+              </form>
+            </div>
+          </template>
+        </div>
+      </div>
+      <div class="mt-4 xl:mx-64 sm:mx-8 mx-4 md:mx-32 lg:mx-32" x-show="numPad == true">
+        <div class="grid grid-cols-5 gap-8">
+          <template x-if="!commandAdded">
+            <div class="col-span-3">
+              <div class="grid grid-cols-3 gap-8 md:gap-12">
+                <template x-for="(number, index) in numeric" :key="index">
+                  <div class="bg-gray-300 p-2 text-center rounded-lg cursor-pointer  transition duration-500 ease-in-out
+                transform pointer-fine:-translate-y-1 pointer-fine:bg-gray-400 pointer-fine:scale-110
+                hover:-translate-y-1 hover:bg-gray-400 hover:scale-110" @click="selectQuantity(index)">
+                    <span class="md:text-6xl sm:text-3xl" x-text="number"></span>
+                  </div>
+                </template>
+                <div class="bg-orange-300 p-2 text-center rounded-lg flex justify-center items-center transition duration-500
+          ease-in-out transform pointer-fine:-translate-y-1 pointer-fine:bg-orange-400 pointer-fine:scale-110
+          hover:-translate-y-1 hover:bg-orange-400 hover:scale-110 cursor-pointer" @click="plusCurrentQuantity()">
+                  <span class="text-3xl text-orange-700 icon-plus"></span>
+                </div>
+                <div class="bg-orange-300 p-2 text-center rounded-lg flex justify-center items-center transition duration-500
+              ease-in-out transform pointer-fine:-translate-y-1 pointer-fine:bg-orange-400 pointer-fine:scale-110
+              hover:-translate-y-1 hover:bg-orange-400 hover:scale-110 cursor-pointer"
+                  @click="multiplyCurrentQuantity()">
+                  <span class="text-3xl text-orange-700 icon-cross"></span>
+                </div>
+              </div>
+              <div class="grid grid-cols-4 gap-8 md:gap-12 mt-4 pt-4 border-t border-gray-800">
+                <div class="bg-green-300 p-2 text-center rounded-lg flex justify-center items-center transition duration-500
+              ease-in-out transform pointer-fine:-translate-y-1 pointer-fine:bg-green-400 pointer-fine:scale-110
+              hover:-translate-y-1 hover:bg-green-400 hover:scale-110 cursor-pointer" @click="addProduct()">
+                  <span class="text-4xl text-green-700 uppercase icon-plus"></span>
+                </div>
+
+                <div class="bg-orange-300 p-2 text-center rounded-lg  flex justify-center items-center transition duration-500 ease-in-out transform
+              pointer-fine:-translate-y-1 pointer-fine:bg-orange-400 pointer-fine:scale-110 hover:-translate-y-1
+              hover:bg-orange-400 hover:scale-110 cursor-pointer" @click="cancelSelectQuantity()">
+                  <span class="text-4xl text-orange-700 uppercase icon-undo2"></span>
+                </div>
+                <div class="bg-red-300 p-2 text-center rounded-lg  flex justify-center items-center transition duration-500 ease-in-out transform
+              pointer-fine:-translate-y-1 pointer-fine:bg-red-400 pointer-fine:scale-110 hover:-translate-y-1
+              hover:bg-red-400 hover:scale-110 cursor-pointer" @click="cancelProductList()">
+                  <span class="text-4xl text-red-700 uppercase icon-bin"></span>
+                </div>
+                <div class="bg-green-300 p-2 text-center rounded-lg transition duration-500 ease-in-out transform
+                            pointer-fine:-translate-y-1 pointer-fine:bg-green-400 pointer-fine:scale-110 hover:-translate-y-1
+                            hover:bg-green-400 hover:scale-110 cursor-pointer" @click="addCommande()">
+                  <span class="text-4xl text-green-700 uppercase font-bold icon-cart"></span>
+                </div>
+              </div>
+
+            </div>
+          </template>
+          <template x-if="commandAdded">
+            <div class="my-4 col-span-3">
+              <div
+                class="bg-green-300 p-2 py-4 text-center rounded-lg transition duration-500 ease-in-out transform pointer-fine:-translate-y-1 pointer-fine:bg-green-400 pointer-fine:scale-110 hover:-translate-y-1 hover:bg-green-400 hover:scale-110 cursor-pointer"
+                @click="confirmAddCommande()">
+                prochaine commande »
+              </div>
+            </div>
+
+          </template>
+          <div class="col-span-2 relative">
+            <template x-if="currentList.length" x-for="(item, index) in currentList">
+              <div>
+                <span x-text="item.product.label"></span>
+                <span>x</span>
+                <span x-text="item.quantity"></span>
+                <span>=</span>
+                <span x-text="item.total"></span>
+                <span>€</span>
+              </div>
+            </template>
+            <template x-if="currentProduct">
+              <span x-text="currentProduct.label"></span>
+            </template>
+            <template x-if="currentQuantity">
+              <span>
+                <span>x</span>
+                <span x-text="currentQuantity"></span>
+              </span>
+            </template>
+            <div class="absolute bottom-0">
+              <template>
+                <div>
+                  <span>=</span>
+                  <span x-text="totalCommande"></span>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="w-full h-100 w-100 flex top-0 justify-center absolute " x-show="adminLogin">
+
+        <div class="bg-gray-800 text-gray-200 w-1/2 h-1/2 py-12 px-4 rounded border-gray-700 shadow relative">
+          <span class="absolute right-0 inset-y-0 mt-3 mr-2 cursor-pointer" @click="toggle('adminLogin')">
+            <span class="icon-cross text-gray-200 w-20 h-auto"></span>
+          </span>
+          <div class="text-center pb-12">
+            <span class="text-6xl text-gray-500 icon-lock"></span>
+          </div>
+          <div class="bg-gray-700 relative">
+            <input type="text" class="bg-gray-700 p-2 w-full" placeholder="entrer le mot de passe..." x-model="adminMdp"
+              disabled>
+            <span class="absolute right-0 inset-y-0 mt-3 mr-2">
+              <span class="icon-key text-gray-500 text-lg w-20 h-auto"></span>
+            </span>
+          </div>
+          <div class="grid grid-cols-5 gap-4 my-4">
+            <template x-for="(item, index) in numericLogin">
+              <div
+                class="text-center bg-gray-700 text-light-100 rounded shadow py-4 hover:bg-gray-900 cursor-pointer
+              pointer-fine:bg-gray-900 border-gray-400 text-lg font-bold hover:text-gray-500 pointer-fine:text-gray-500"
+                @click="addAdminMdp(item)">
+                <span x-text="item"></span>
+              </div>
+            </template>
+            <div
+              class="text-center bg-orange-700 text-light-100 rounded shadow py-4 hover:bg-orange-900 cursor-pointer
+                          pointer-fine:bg-orange-900 border-orange-400 text-lg font-bold hover:text-orange-500 pointer-fine:text-orange-500"
+              @click="backwardAdminMdp()">
+              <span class="icon-undo"></span>
+            </div>
+            <div
+              class="text-center bg-red-700 text-light-100 rounded shadow py-4 hover:bg-red-900 cursor-pointer
+                          pointer-fine:bg-red-900 border-red-400 text-lg font-bold hover:text-red-500 pointer-fine:text-red-500"
+              @click="resetAdminMdp()">
+              <span class="icon-bin"></span>
+            </div>
+          </div>
+          <div class="bg-green-700 relative w-24 mx-auto px-2 py-4 mt-4 rounded shadow text-green-400 cursor-pointer
+          hover:bg-green-800 border-green-400 flex items-center" @click="login">
+            <button class="uppercase text-sm">entrer</button>
+            <span class="absolute right-0 inset-y-0 mt-4 mr-2 ">
+              <span class="icon-circle-right text-green-400  h-auto"></span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <template x-if="isCommandHistory">
+        <div class="absolute right-0 top-0 bg-gray-900 h-full w-64 text-gray-500 p-2 pt-4">
+          <div x-show="!commandList.length" class="text-sm text-center">
+            pas de commande en cours
+          </div>
+          <div x-show="commandList.length" class="text-sm text-center">
+            
+          </div>
+        </div>
+      </template>
+      <div class="absolute bottom-0 bg-gray-400 w-full">
+        <template x-if="isAdmin">
+          <div>
+            <div class="bg-gray-300 border-t border-b w-full px-4 py-2">
+              <div class="w-1/4">
+                <div class="grid grid-cols-6 gap-2 flex items-center">
+                  <span class="col-span-2">commandes:</span>
+                  <span class="col-span-1" x-text="commandList.length"></span>
+                  <span class="col-span-2">(<span x-text="parseFloat(commandTotal).toFixed(2)"></span> €)</span>
+                  <span class="icon-history cursor-pointer p-1 bg-gray-900 text-gray-100 rounded shadow text-center"
+                    @click="toggle('isCommandHistory')"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+        <div class="relative px-4 py-2">
+          <div>
+            We are using <span class="icon-node-dot-js"></span> <span id="node-version"></span>,
+            <span class="icon-googlechrome"></span> <span id="chrome-version"></span>,
+            and <span class="icon-electron"></span> <span id="electron-version"></span>.
+          </div>
+          <div class="absolute inset-y-0 right-0 mr-2 pt-2">
+            <template x-if="!isAdmin">
+              <span class="icon-lock" @click="toggle('adminLogin')"></span>
+            </template>
+            <template x-if="isAdmin">
+              <span class="icon-unlocked"></span>
+            </template>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- You can also require other files to run in this process -->
+  <script src="./src/renderer.js"></script>
+</body>
+
 </html>
